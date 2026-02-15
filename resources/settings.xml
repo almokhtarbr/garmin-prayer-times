@@ -1,0 +1,70 @@
+<settings xmlns:iq="http://www.garmin.com/xml/connectiq">
+    <setting propertyKey="@Properties.calcMethod"
+             title="@Strings.calcMethodLabel">
+        <settingConfig type="list">
+            <listEntry value="0">ISNA (North America)</listEntry>
+            <listEntry value="1">Muslim World League</listEntry>
+            <listEntry value="2">Egyptian</listEntry>
+            <listEntry value="3">Umm al-Qura (Saudi)</listEntry>
+            <listEntry value="4">Dubai</listEntry>
+            <listEntry value="5">Karachi</listEntry>
+            <listEntry value="6">Kuwait</listEntry>
+            <listEntry value="7">Qatar</listEntry>
+            <listEntry value="8">Singapore</listEntry>
+            <listEntry value="9">Tehran</listEntry>
+            <listEntry value="10">Turkey</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.asrMethod"
+             title="@Strings.asrMethodLabel">
+        <settingConfig type="list">
+            <listEntry value="0">Shafi (standard)</listEntry>
+            <listEntry value="1">Hanafi</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.showIqama"
+             title="@Strings.showIqamaLabel">
+        <settingConfig type="boolean" />
+    </setting>
+
+    <setting propertyKey="@Properties.iqamaFajr"
+             title="@Strings.iqamaFajrLabel">
+        <settingConfig type="numeric" min="0" max="120" />
+    </setting>
+
+    <setting propertyKey="@Properties.iqamaDhuhr"
+             title="@Strings.iqamaDhuhrLabel">
+        <settingConfig type="numeric" min="0" max="120" />
+    </setting>
+
+    <setting propertyKey="@Properties.iqamaAsr"
+             title="@Strings.iqamaAsrLabel">
+        <settingConfig type="numeric" min="0" max="120" />
+    </setting>
+
+    <setting propertyKey="@Properties.iqamaMaghrib"
+             title="@Strings.iqamaMaghribLabel">
+        <settingConfig type="numeric" min="0" max="120" />
+    </setting>
+
+    <setting propertyKey="@Properties.iqamaIsha"
+             title="@Strings.iqamaIshaLabel">
+        <settingConfig type="numeric" min="0" max="120" />
+    </setting>
+
+    <setting propertyKey="@Properties.accentColor"
+             title="@Strings.accentColorLabel">
+        <settingConfig type="list">
+            <listEntry value="16728132">Red</listEntry>
+            <listEntry value="5635925">Green</listEntry>
+            <listEntry value="5614335">Blue</listEntry>
+            <listEntry value="16755200">Orange</listEntry>
+            <listEntry value="16777045">Yellow</listEntry>
+            <listEntry value="11162367">Purple</listEntry>
+            <listEntry value="65535">Cyan</listEntry>
+            <listEntry value="16777215">White</listEntry>
+        </settingConfig>
+    </setting>
+</settings>
