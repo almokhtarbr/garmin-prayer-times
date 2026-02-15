@@ -158,9 +158,9 @@ class PrayerCalculator {
         var diff = lat - decl;
         if (diff < 0.0) { diff = -diff; }
         // acot(factor + tan(|lat-decl|)) gives the sun altitude angle for Asr
-        // Negate it to match hourAngle() convention (negative = below reference)
+        // Positive because the sun is above the horizon at Asr time
         var angle = dacot(factor.toDouble() + dtan(diff));
-        var ha = hourAngle(lat, decl, -angle);
+        var ha = hourAngle(lat, decl, angle);
         if (ha == null) {
             return transit + 4.0; // fallback
         }
