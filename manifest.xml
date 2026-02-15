@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+    <iq:application id="a3b4c5d6-7890-1234-abcd-ef0123456789"
+                    type="watchface"
+                    name="@Strings.AppName"
+                    entry="GarminPrayerTimesApp"
+                    launcherIcon="@Drawables.LauncherIcon"
+                    minApiLevel="3.1.0">
+        <iq:products>
+            <!-- AMOLED devices only (FONT_NUMBER_HOT/MILD require AMOLED) -->
+            <iq:product id="epix2pro47mm" />
+            <iq:product id="epix2pro42mm" />
+            <iq:product id="epix2pro51mm" />
+            <iq:product id="venu2" />
+            <iq:product id="venu2plus" />
+            <iq:product id="venu3" />
+            <iq:product id="venu3s" />
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="Positioning" />
+        </iq:permissions>
+        <iq:languages>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+    </iq:application>
+</iq:manifest>

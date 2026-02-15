@@ -1,0 +1,9 @@
+bin/
+.vscode/
+.settings/
+.project
+.classpath
+*.prg
+*.iq
+*.debug.xml
+.junction
