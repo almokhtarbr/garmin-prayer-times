@@ -40,6 +40,8 @@ class PrayerState {
 
     // Countdown string (e.g. "1h 23m", "45m")
     var countdownString as String = "";
+    // Iqama countdown string (e.g. "iqama in 23m")
+    var iqamaCountdownString as String = "";
     // Next prayer name for display
     var nextPrayerName as String = "";
 
@@ -197,9 +199,12 @@ class PrayerState {
                 if (elapsed < 0.0) { elapsed = elapsed + 24.0; }
                 progressFraction = (totalSpan > 0.0) ? (elapsed / totalSpan).toFloat() : 0.0f;
                 if (progressFraction > 1.0f) { progressFraction = 1.0f; }
+                // Iqama countdown for tomorrow's Fajr
+                updateIqamaCountdown(hour, tomorrowFajr as Double, FAJR, true);
             } else {
                 countdownString = "--";
                 progressFraction = 0.0f;
+                iqamaCountdownString = "";
             }
             return;
         }
@@ -218,6 +223,9 @@ class PrayerState {
         if (remaining < 0.0) { remaining = remaining + 24.0; }
         countdownString = formatCountdown(remaining);
 
+        // Iqama countdown
+        updateIqamaCountdown(hour, nextTime, nextPrayerIndex, false);
+
         // Progress between previous and next prayer
         var prevIndex = findPreviousPrayer(nextPrayerIndex);
         var prevTime = 0.0;
@@ -233,6 +241,29 @@ class PrayerState {
         if (elapsed < 0.0) { elapsed = elapsed + 24.0; }
         progressFraction = (totalSpan > 0.0) ? (elapsed / totalSpan).toFloat() : 0.0f;
         if (progressFraction > 1.0f) { progressFraction = 1.0f; }
+    }
+
+    hidden function updateIqamaCountdown(
+        hour as Double, prayerTime as Double, prayerIdx as Number, isTomorrow as Boolean
+    ) {
+        if (!showIqama || prayerIdx == SUNRISE) {
+            iqamaCountdownString = "";
+            return;
+        }
+        var offset = iqamaOffsets[prayerIdx] as Number;
+        if (offset <= 0) {
+            iqamaCountdownString = "";
+            return;
+        }
+        var iqamaTime = prayerTime + offset.toDouble() / 60.0;
+        var remaining;
+        if (isTomorrow) {
+            remaining = (24.0 - hour) + iqamaTime;
+        } else {
+            remaining = iqamaTime - hour;
+        }
+        if (remaining < 0.0) { remaining = remaining + 24.0; }
+        iqamaCountdownString = "iqama " + formatCountdown(remaining);
     }
 
     hidden function findPreviousPrayer(nextIdx as Number) as Number {
