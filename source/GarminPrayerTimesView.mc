@@ -9,13 +9,14 @@ import Toybox.Application.Properties;
 
 class GarminPrayerTimesView extends WatchUi.WatchFace {
 
-    const COLOR_BG      = 0x000000;
-    const COLOR_PRIMARY = 0xFFFFFF;
-    const COLOR_SECOND  = 0x888888;
-    const COLOR_PASSED  = 0x383838;
-    const COLOR_TRACK   = 0x1A1A1A;
-
-    const DISPLAY_PRAYERS = [0, 2, 3, 4, 5];
+    const COLOR_BG       = 0x000000;
+    const COLOR_BRIGHT   = 0xFFFFFF;  // white — clock, upcoming times
+    const COLOR_MID      = 0xAAAAAA;  // light gray — hijri, secondary
+    const COLOR_FADED    = 0x444444;  // dark gray — passed prayers
+    const COLOR_CELL_DIM = 0x0D0D0D;  // passed cell bg
+    const COLOR_CELL     = 0x1A1A1A;  // upcoming cell bg
+    const COLOR_TRACK    = 0x1A1A1A;
+    const COLOR_ACCENT   = 0x42A5F5;  // light blue
 
     var isLowPower as Boolean = false;
 
@@ -30,7 +31,7 @@ class GarminPrayerTimesView extends WatchUi.WatchFace {
         var app = Application.getApp() as GarminPrayerTimesApp;
         var state = app.prayerState;
         if (state == null) {
-            dc.setColor(COLOR_PRIMARY, COLOR_BG);
+            dc.setColor(COLOR_BRIGHT, COLOR_BG);
             dc.clear();
             dc.drawText(dc.getWidth() / 2, dc.getHeight() / 2,
                 Graphics.FONT_SMALL, "Loading...",
@@ -40,8 +41,8 @@ class GarminPrayerTimesView extends WatchUi.WatchFace {
 
         state.update();
 
-        var acVal = Properties.getValue("accentColor");
-        var accent = (acVal != null) ? (acVal as Number) : 0x66BB6A;
+        // Force amber accent — ignore old cached red from previous builds
+        var accent = COLOR_ACCENT;
         var h = dc.getHeight();
         var cx = dc.getWidth() / 2;
 
@@ -50,49 +51,51 @@ class GarminPrayerTimesView extends WatchUi.WatchFace {
             return;
         }
 
-        dc.setColor(COLOR_PRIMARY, COLOR_BG);
+        dc.setColor(COLOR_BRIGHT, COLOR_BG);
         dc.clear();
 
         // ── Outer progress arc ──
         drawOuterArc(dc, cx, h, state.progressFraction, accent);
 
+        // ── Layout flows top to bottom ──
         var fhX = dc.getFontHeight(Graphics.FONT_XTINY);
-
-        // ── Hijri date ──
-        dc.setColor(COLOR_SECOND, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, h * 35 / 416 - fhX / 2, Graphics.FONT_XTINY,
-            state.hijriDate, Graphics.TEXT_JUSTIFY_CENTER);
-
-        // ── Clock ──
-        var clockTime = System.getClockTime();
-        var timeStr = PrayerState.pad2(clockTime.hour) + ":" + PrayerState.pad2(clockTime.min);
-        var fhTime = dc.getFontHeight(Graphics.FONT_NUMBER_HOT);
-        dc.setColor(COLOR_PRIMARY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, h * 86 / 416 - fhTime / 2, Graphics.FONT_NUMBER_HOT,
-            timeStr, Graphics.TEXT_JUSTIFY_CENTER);
-
-        // ── Day name ──
-        var now = Gregorian.info(Time.now(), Time.FORMAT_LONG);
-        dc.setColor(COLOR_SECOND, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, h * 138 / 416 - fhX / 2, Graphics.FONT_XTINY,
-            now.day_of_week as String, Graphics.TEXT_JUSTIFY_CENTER);
-
-        // ── Next prayer + countdown ──
         var fhT = dc.getFontHeight(Graphics.FONT_TINY);
+        var fhTime = dc.getFontHeight(Graphics.FONT_NUMBER_HOT);
+
+        // Hijri date — tight to top
+        var y = h * 48 / 416;
+        dc.setColor(COLOR_BRIGHT, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(cx, y, Graphics.FONT_XTINY,
+            state.hijriDate, Graphics.TEXT_JUSTIFY_CENTER);
+        y = y + fhX - 30;
+
+        // Clock — no gap
+        dc.setColor(COLOR_BRIGHT, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(cx, y, Graphics.FONT_NUMBER_HOT,
+            PrayerState.pad2(System.getClockTime().hour) + ":" +
+            PrayerState.pad2(System.getClockTime().min),
+            Graphics.TEXT_JUSTIFY_CENTER);
+        y = y + fhTime - 30;
+
+        // Next prayer countdown — tight
         dc.setColor(accent, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, h * 170 / 416 - fhT / 2, Graphics.FONT_TINY,
+        dc.drawText(cx, y, Graphics.FONT_TINY,
             state.nextPrayerName + " in " + state.countdownString,
             Graphics.TEXT_JUSTIFY_CENTER);
+        y = y + fhT;
 
-        // ── Iqama ──
+        // Iqama countdown
         if (state.showIqama && !state.iqamaCountdownString.equals("")) {
-            dc.setColor(COLOR_SECOND, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h * 196 / 416 - fhX / 2, Graphics.FONT_XTINY,
+            dc.setColor(COLOR_BRIGHT, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, y, Graphics.FONT_XTINY,
                 state.iqamaCountdownString, Graphics.TEXT_JUSTIFY_CENTER);
+            y = y + fhX + 4;
+        } else {
+            y = y + 4;
         }
 
-        // ── Prayer list with timeline ──
-        drawPrayerList(dc, state, cx, h, accent);
+        // Prayer grid
+        drawPrayerGrid(dc, state, cx, h, y, accent, fhT, fhX);
     }
 
     hidden function drawOuterArc(
@@ -100,9 +103,8 @@ class GarminPrayerTimesView extends WatchUi.WatchFace {
     ) as Void {
         var cy = h / 2;
         var radius = h / 2 - 8;
-        dc.setPenWidth(8);
+        dc.setPenWidth(6);
 
-        // 240° arc from 8 o'clock to 4 o'clock, gap at bottom
         dc.setColor(COLOR_TRACK, Graphics.COLOR_TRANSPARENT);
         dc.drawArc(cx, cy, radius, Graphics.ARC_CLOCKWISE, 210, 330);
 
@@ -117,8 +119,9 @@ class GarminPrayerTimesView extends WatchUi.WatchFace {
         dc.setPenWidth(1);
     }
 
-    hidden function drawPrayerList(
-        dc as Dc, state as PrayerState, cx as Number, h as Number, accent as Number
+    hidden function drawPrayerGrid(
+        dc as Dc, state as PrayerState, cx as Number, h as Number,
+        gridTop as Number, accent as Number, fhT as Number, fhX as Number
     ) as Void {
         if (state.todayTimes == null) { return; }
 
@@ -126,90 +129,82 @@ class GarminPrayerTimesView extends WatchUi.WatchFace {
         var nowInfo = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
         var hour = (nowInfo.hour as Number).toDouble()
                  + (nowInfo.min as Number).toDouble() / 60.0;
-        var dayOfWeek = nowInfo.day_of_week as Number;
 
-        var fhX = dc.getFontHeight(Graphics.FONT_XTINY);
-        var rowH = fhX + 4;
+        var gap = h * 3 / 416;
+        var gridW = h * 250 / 416;
+        var colW = (gridW - gap) / 2;
+        var gridLeft = cx - gridW / 2;
+        var cellPad = 4;
 
-        // Compute startY so the list always fits within safe zone
-        var safeBottom = h * 375 / 416;
-        var totalHeight = 5 * rowH;
-        var startY = safeBottom - totalHeight;
+        // Compact single-line cells
+        var rowH = fhT + cellPad * 2;
 
-        var nameX = cx - h * 58 / 416;
-        var timeX = cx + h * 68 / 416;
-        var lineX = nameX - h * 18 / 416;
+        for (var row = 0; row < 3; row++) {
+            for (var col = 0; col < 2; col++) {
+                var i = row * 2 + col;
+                var cellX = gridLeft + col * (colW + gap);
+                var cellY = gridTop + row * (rowH + gap);
 
-        // Vertical timeline line
-        var lineTop = startY + fhX / 2;
-        var lineBot = startY + 4 * rowH + fhX / 2;
-        dc.setColor(COLOR_PASSED, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(2);
-        dc.drawLine(lineX, lineTop, lineX, lineBot);
-        dc.setPenWidth(1);
+                var prayerTime = times[i] as Double;
+                var isPassed = (hour >= prayerTime) && !state.isNextTomorrowFajr;
+                var isNext = (i == state.nextPrayerIndex) && !state.isNextTomorrowFajr;
 
-        for (var di = 0; di < 5; di++) {
-            var i = DISPLAY_PRAYERS[di] as Number;
-            var y = startY + di * rowH;
-            var dotY = y + fhX / 2;
-            var prayerTime = times[i] as Double;
-            var isPassed = (hour >= prayerTime) && !state.isNextTomorrowFajr;
-            var isNext = (i == state.nextPrayerIndex) && !state.isNextTomorrowFajr;
+                if (i == PrayerState.SUNRISE) { isNext = false; }
+                if (state.isNextTomorrowFajr) { isPassed = true; }
 
-            if (state.isNextTomorrowFajr && i == PrayerState.FAJR) {
-                isNext = false;
-                isPassed = true;
+                // Cell background
+                if (isNext) {
+                    dc.setColor(accent, Graphics.COLOR_TRANSPARENT);
+                } else if (isPassed) {
+                    dc.setColor(COLOR_CELL_DIM, Graphics.COLOR_TRANSPARENT);
+                } else {
+                    dc.setColor(COLOR_CELL, Graphics.COLOR_TRANSPARENT);
+                }
+                dc.fillRectangle(cellX, cellY, colW, rowH);
+
+                // Time — left side of cell
+                var textY = cellY + cellPad;
+                if (isNext) {
+                    dc.setColor(COLOR_BG, Graphics.COLOR_TRANSPARENT);
+                } else if (isPassed) {
+                    dc.setColor(COLOR_FADED, Graphics.COLOR_TRANSPARENT);
+                } else {
+                    dc.setColor(COLOR_BRIGHT, Graphics.COLOR_TRANSPARENT);
+                }
+                dc.drawText(cellX + 10, textY, Graphics.FONT_TINY,
+                    PrayerState.formatTime(prayerTime), Graphics.TEXT_JUSTIFY_LEFT);
+
+                // Iqama offset "+X" — right side, smaller, baseline-aligned
+                if (state.showIqama && i != PrayerState.SUNRISE) {
+                    var offset = state.iqamaOffsets[i] as Number;
+                    if (offset > 0) {
+                        if (isNext) {
+                            dc.setColor(COLOR_BRIGHT, Graphics.COLOR_TRANSPARENT);
+                        } else if (isPassed) {
+                            dc.setColor(COLOR_FADED, Graphics.COLOR_TRANSPARENT);
+                        } else {
+                            dc.setColor(COLOR_BRIGHT, Graphics.COLOR_TRANSPARENT);
+                        }
+                        // Align to bottom of time text
+                        var iqY = textY + fhT - fhX - 30;
+                        dc.drawText(cellX + colW - 8, iqY, Graphics.FONT_XTINY,
+                            "+" + offset.toString(), Graphics.TEXT_JUSTIFY_RIGHT);
+                    }
+                }
             }
-
-            // Timeline dot
-            if (isNext) {
-                // Glow ring behind the dot
-                dc.setColor(COLOR_PASSED, Graphics.COLOR_TRANSPARENT);
-                dc.fillCircle(lineX, dotY, 8);
-                dc.setColor(accent, Graphics.COLOR_TRANSPARENT);
-                dc.fillCircle(lineX, dotY, 5);
-            } else if (isPassed) {
-                dc.setColor(COLOR_SECOND, Graphics.COLOR_TRANSPARENT);
-                dc.fillCircle(lineX, dotY, 3);
-            } else {
-                // Open circle for upcoming
-                dc.setColor(COLOR_SECOND, Graphics.COLOR_TRANSPARENT);
-                dc.setPenWidth(2);
-                dc.drawCircle(lineX, dotY, 3);
-                dc.setPenWidth(1);
-            }
-
-            // Text color
-            var color;
-            if (isNext) {
-                color = accent;
-            } else if (isPassed) {
-                color = COLOR_PASSED;
-            } else {
-                color = COLOR_PRIMARY;
-            }
-            dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-
-            // Prayer name
-            dc.drawText(nameX, y, Graphics.FONT_XTINY,
-                state.getPrayerName(i, dayOfWeek), Graphics.TEXT_JUSTIFY_LEFT);
-
-            // Prayer time (right aligned for clean columns)
-            dc.drawText(timeX, y, Graphics.FONT_XTINY,
-                PrayerState.formatTime(prayerTime), Graphics.TEXT_JUSTIFY_RIGHT);
         }
     }
 
     hidden function drawLowPower(
         dc as Dc, state as PrayerState, h as Number, cx as Number, accent as Number
     ) as Void {
-        dc.setColor(COLOR_PRIMARY, COLOR_BG);
+        dc.setColor(COLOR_BRIGHT, COLOR_BG);
         dc.clear();
 
         var clockTime = System.getClockTime();
         var timeStr = PrayerState.pad2(clockTime.hour) + ":" + PrayerState.pad2(clockTime.min);
         var fhTime = dc.getFontHeight(Graphics.FONT_NUMBER_MILD);
-        dc.setColor(COLOR_SECOND, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(COLOR_BRIGHT, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, h / 2 - 30 - fhTime / 2, Graphics.FONT_NUMBER_MILD,
             timeStr, Graphics.TEXT_JUSTIFY_CENTER);
 
