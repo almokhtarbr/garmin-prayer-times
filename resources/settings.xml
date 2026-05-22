@@ -1,4 +1,14 @@
 <settings xmlns:iq="http://www.garmin.com/xml/connectiq">
+    <setting propertyKey="@Properties.faceStyle"
+             title="@Strings.faceStyleLabel">
+        <settingConfig type="list">
+            <listEntry value="0">Twilight Horizon</listEntry>
+            <listEntry value="1">Solar Dial</listEntry>
+            <listEntry value="2">Crescent Month</listEntry>
+            <listEntry value="3">Gradient Sky Arc</listEntry>
+        </settingConfig>
+    </setting>
+
     <setting propertyKey="@Properties.calcMethod"
              title="@Strings.calcMethodLabel">
         <settingConfig type="list">

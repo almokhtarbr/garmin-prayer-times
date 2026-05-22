@@ -2,6 +2,7 @@
     <string id="AppName">Prayer Times</string>
     <string id="calcMethodLabel">Calculation Method</string>
     <string id="asrMethodLabel">Asr Calculation</string>
+    <string id="faceStyleLabel">Face Style</string>
     <string id="showIqamaLabel">Show Iqama Times</string>
     <string id="iqamaFajrLabel">Iqama Fajr (min)</string>
     <string id="iqamaDhuhrLabel">Iqama Dhuhr (min)</string>

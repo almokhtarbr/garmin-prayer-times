@@ -1,6 +1,7 @@
 <properties xmlns:iq="http://www.garmin.com/xml/connectiq">
     <property id="calcMethod" type="number">0</property>
     <property id="asrMethod" type="number">0</property>
+    <property id="faceStyle" type="number">0</property>
     <property id="showIqama" type="boolean">true</property>
     <property id="iqamaFajr" type="number">20</property>
     <property id="iqamaDhuhr" type="number">61</property>
