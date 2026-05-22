@@ -58,6 +58,101 @@ module FaceKit {
         return (r << 16) | (g << 8) | b;
     }
 
+    // Fill the screen with a vertical banded gradient (top -> horizon colour).
+    function drawSky(dc as Graphics.Dc, topColor as Number,
+                     horizonColor as Number) as Void {
+        var w = dc.getWidth();
+        var h = dc.getHeight();
+        var bands = 40;
+        for (var i = 0; i < bands; i++) {
+            var t = i.toFloat() / (bands - 1);
+            var c = lerpColor(topColor, horizonColor, t);
+            dc.setColor(c, c);
+            dc.fillRectangle(0, i * h / bands, w, (h / bands) + 2);
+        }
+    }
+
+    // A glowing sun: a coloured disc, a lighter ring, a white core.
+    function drawSun(dc as Graphics.Dc, x as Float, y as Float,
+                     color as Number) as Void {
+        var xi = x.toNumber();
+        var yi = y.toNumber();
+        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(xi, yi, 13);
+        dc.setColor(lerpColor(color, 0xFFFFFF, 0.55), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(xi, yi, 8);
+        dc.setColor(0xFFFFFF, Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(xi, yi, 4);
+    }
+
+    // Scatter fixed stars across the screen (deterministic positions).
+    function drawStarfield(dc as Graphics.Dc) as Void {
+        var w = dc.getWidth();
+        var h = dc.getHeight();
+        var stars = [
+            [0.16,0.12,1],[0.30,0.07,1],[0.44,0.13,2],[0.58,0.06,1],
+            [0.70,0.11,1],[0.84,0.18,2],[0.12,0.26,1],[0.90,0.30,1],
+            [0.22,0.40,1],[0.79,0.42,1],[0.07,0.48,1],[0.93,0.52,2],
+            [0.35,0.22,1],[0.64,0.24,1],[0.50,0.32,1],[0.27,0.52,1],
+            [0.73,0.56,1],[0.18,0.62,1],[0.86,0.64,1],[0.40,0.30,1],
+            [0.60,0.16,2],[0.52,0.46,1],[0.10,0.36,1],[0.88,0.44,1]
+        ];
+        dc.setColor(0xCFD4FF, Graphics.COLOR_TRANSPARENT);
+        for (var i = 0; i < stars.size(); i++) {
+            var s = stars[i];
+            dc.fillCircle(((s[0] as Float) * w).toNumber(),
+                          ((s[1] as Float) * h).toNumber(),
+                          s[2] as Number);
+        }
+    }
+
+    // Small weather icon centred at (x,y). cond: 0 clear,1 cloud,2 rain,3 snow.
+    function drawWeatherGlyph(dc as Graphics.Dc, x as Number, y as Number,
+                              cond as Number) as Void {
+        if (cond == 0) {
+            dc.setColor(0xFFD98A, Graphics.COLOR_TRANSPARENT);
+            dc.fillCircle(x, y, 5);
+            return;
+        }
+        dc.setColor(0xB0B6C8, Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(x - 4, y, 4);
+        dc.fillCircle(x + 4, y, 4);
+        dc.fillCircle(x, y - 3, 5);
+        if (cond == 2) {
+            dc.setColor(0x6E9AD0, Graphics.COLOR_TRANSPARENT);
+            dc.fillRectangle(x - 5, y + 5, 2, 4);
+            dc.fillRectangle(x + 1, y + 5, 2, 4);
+        } else if (cond == 3) {
+            dc.setColor(0xE6ECFF, Graphics.COLOR_TRANSPARENT);
+            dc.fillCircle(x - 3, y + 7, 1);
+            dc.fillCircle(x + 3, y + 7, 1);
+        }
+    }
+
+    // Paint the living time-of-day background (+ stars at night).
+    // Call as the first line of a face's draw(). Returns the Sky phase.
+    function drawSkyLayer(dc as Graphics.Dc, state as PrayerState) as Number {
+        var t = System.getClockTime();
+        var nowHour = (t.hour + t.min / 60.0).toDouble();
+        var ph = Sky.phase(nowHour, state.sunrise, state.sunset);
+        var wx = WeatherData.condition();
+        drawSky(dc, Sky.topColor(ph, wx), Sky.horizonColor(ph, wx));
+        if (Sky.showStars(ph)) { drawStarfield(dc); }
+        return ph;
+    }
+
+    // Weather readout: glyph + temperature near (cx, y). Silent when no data.
+    function drawWeather(dc as Graphics.Dc, cx as Number, y as Number) as Void {
+        if (!WeatherData.isAvailable()) { return; }
+        var temp = WeatherData.temperature();
+        if (temp == null) { return; }
+        drawWeatherGlyph(dc, cx - 15, y, WeatherData.condition());
+        dc.setColor(Theme.TEXT_MID, Graphics.COLOR_TRANSPARENT);
+        var fh = dc.getFontHeight(Graphics.FONT_XTINY);
+        dc.drawText(cx + 4, y - fh / 2, Graphics.FONT_XTINY,
+            temp.toString() + "°", Graphics.TEXT_JUSTIFY_LEFT);
+    }
+
     // Draw an arc in the FaceKit convention (0 deg = top, clockwise).
     // Converts to Garmin's native convention (0 = 3 o'clock, counter-clockwise).
     function drawArcSegment(dc as Graphics.Dc, cx as Float, cy as Float, r as Float,
