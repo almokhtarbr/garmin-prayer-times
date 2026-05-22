@@ -72,17 +72,21 @@ module FaceKit {
         }
     }
 
-    // A glowing sun: a coloured disc, a lighter ring, a white core.
+    // A glowing sun: a soft corona, the disc, a lighter ring, a white core.
     function drawSun(dc as Graphics.Dc, x as Float, y as Float,
                      color as Number) as Void {
         var xi = x.toNumber();
         var yi = y.toNumber();
+        dc.setColor(lerpColor(0x000000, color, 0.30), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(xi, yi, 21);
+        dc.setColor(lerpColor(0x000000, color, 0.60), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(xi, yi, 14);
         dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(xi, yi, 13);
+        dc.fillCircle(xi, yi, 10);
         dc.setColor(lerpColor(color, 0xFFFFFF, 0.55), Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(xi, yi, 8);
+        dc.fillCircle(xi, yi, 6);
         dc.setColor(0xFFFFFF, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(xi, yi, 4);
+        dc.fillCircle(xi, yi, 3);
     }
 
     // Scatter fixed stars; alpha 0.0 (invisible) .. 1.0 (full night).
@@ -196,15 +200,48 @@ module FaceKit {
         dc.fillCircle(x.toNumber(), y.toNumber(), radius);
     }
 
-    // A crescent: a lit disc carved by an offset background disc.
-    function drawCrescent(dc as Graphics.Dc, cx as Number, cy as Number, r as Number,
-                          illum as Float, waxing as Boolean) as Void {
-        dc.setColor(Theme.MOON, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, r);
-        var d = (2.0 * r * illum).toNumber();
-        var sx = waxing ? cx - d : cx + d;
-        dc.setColor(Theme.BG, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(sx, cy, r);
+    // A crescent moon, scanline-filled so it is correct on any background.
+    // Faint earthshine fills the dark limb.
+    function drawCrescent(dc as Graphics.Dc, cx as Number, cy as Number,
+                          r as Number, illum as Float, waxing as Boolean) as Void {
+        var d = 2.0 * r * illum;
+        var earth = lerpColor(Theme.BG, Theme.MOON, 0.13);
+        for (var dy = -r; dy <= r; dy++) {
+            var ch2 = (r * r - dy * dy).toFloat();
+            if (ch2 < 0.0) { continue; }
+            var chord = Math.sqrt(ch2);
+            var yy = cy + dy;
+            var moonL = cx - chord;
+            var moonR = cx + chord;
+            dc.setColor(earth, Graphics.COLOR_TRANSPARENT);
+            dc.drawLine(moonL.toNumber(), yy, moonR.toNumber(), yy);
+            dc.setColor(Theme.MOON, Graphics.COLOR_TRANSPARENT);
+            if (waxing) {
+                var litL = (cx - d) + chord;
+                if (litL < moonR) {
+                    dc.drawLine(litL.toNumber(), yy, moonR.toNumber(), yy);
+                }
+            } else {
+                var litR = (cx + d) - chord;
+                if (litR > moonL) {
+                    dc.drawLine(moonL.toNumber(), yy, litR.toNumber(), yy);
+                }
+            }
+        }
+    }
+
+    // A halo ring at the bezel that builds as a prayer nears (last 15 min).
+    function drawApproachGlow(dc as Graphics.Dc, minutesToNext as Number) as Void {
+        if (minutesToNext < 0 || minutesToNext > 15) { return; }
+        var intensity = (15 - minutesToNext).toFloat() / 15.0;
+        var w = dc.getWidth();
+        var h = dc.getHeight();
+        var penW = (3 + intensity * 9).toNumber();
+        dc.setColor(lerpColor(0x000000, Theme.accent(), 0.25 + intensity * 0.55),
+                    Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(penW);
+        dc.drawCircle(w / 2, h / 2, w / 2 - penW / 2 - 1);
+        dc.setPenWidth(1);
     }
 
     // Current time as HH:MM, centered on (cx, y).
