@@ -150,7 +150,7 @@ module FaceKit {
         dc.setColor(Theme.TEXT_MID, Graphics.COLOR_TRANSPARENT);
         var fh = dc.getFontHeight(Graphics.FONT_XTINY);
         dc.drawText(cx + 4, y - fh / 2, Graphics.FONT_XTINY,
-            temp.toString() + "°", Graphics.TEXT_JUSTIFY_LEFT);
+            temp.toNumber().toString() + "°", Graphics.TEXT_JUSTIFY_LEFT);
     }
 
     // Draw an arc in the FaceKit convention (0 deg = top, clockwise).
