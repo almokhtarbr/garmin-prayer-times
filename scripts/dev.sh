@@ -15,10 +15,10 @@ case "${1:-}" in
   test)
     "$SDK/bin/monkeyc" -o bin/GarminPrayerTimesTest.prg -f monkey.jungle \
       -y "$KEY" -d "$DEVICE" -l 0 --unit-test
-    "$SDK/bin/monkeydo" bin/GarminPrayerTimesTest.prg "$DEVICE" -t
+    "$SDK/bin/monkeydo" "bin/GarminPrayerTimesTest.prg" "$DEVICE" -t
     ;;
   sim)
-    "$SDK/bin/monkeydo" bin/GarminPrayerTimes.prg "$DEVICE"
+    "$SDK/bin/monkeydo" "bin/GarminPrayerTimes.prg" "$DEVICE"
     ;;
   package)
     java -jar "$SDK/bin/monkeybrains.jar" -o bin/GarminPrayerTimes.iq \
