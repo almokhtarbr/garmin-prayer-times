@@ -21,6 +21,11 @@ class PrayerState {
     static const MAGHRIB = 4;
     static const ISHA = 5;
 
+    // Prayer status values
+    static const STATUS_PASSED   = 0;
+    static const STATUS_NEXT     = 1;
+    static const STATUS_UPCOMING = 2;
+
     // Cached prayer times as hours (fractional) for today
     var todayTimes as Array?;
     // Tomorrow's Fajr time (hours, fractional)
@@ -50,6 +55,14 @@ class PrayerState {
 
     // Progress fraction (0.0 - 1.0) between current and next prayer
     var progressFraction as Float = 0.0f;
+
+    // Derived data for the faces
+    var sunrise as Double = 0.0d;
+    var sunset as Double = 0.0d;
+    var dayFraction as Float = 0.0f;
+    var prayerStatus as Array = [0, 0, 0, 0, 0, 0];
+    var moonIllumination as Float = 0.0f;
+    var moonWaxing as Boolean = true;
 
     // Settings cache
     var calcMethod as Number = 0;
@@ -130,11 +143,20 @@ class PrayerState {
             currentDateKey = dateKey;
             // Update Hijri date only on date change
             hijriDate = HijriCalendar.format(year, month, day);
+            var hParts = HijriCalendar.toHijri(year, month, day);
+            var hDay = hParts[2] as Number;
+            moonIllumination = MoonPhase.illumination(hDay);
+            moonWaxing = MoonPhase.isWaxing(hDay);
         }
 
-        // Update next prayer and countdown
+        // Update next prayer, countdown, and derived face data
         if (todayTimes != null) {
             updateNextPrayer(now);
+            var hr = (now.hour as Number).toDouble()
+                   + (now.min as Number).toDouble() / 60.0;
+            dayFraction = computeDayFraction(hr, sunrise, sunset);
+            prayerStatus = computeStatus(todayTimes as Array, hr,
+                nextPrayerIndex, isNextTomorrowFajr);
         }
     }
 
@@ -149,6 +171,11 @@ class PrayerState {
             latitude as Double, longitude as Double,
             tz, calcMethod, asrFactor
         );
+
+        if (todayTimes != null) {
+            sunrise = (todayTimes as Array)[SUNRISE] as Double;
+            sunset  = (todayTimes as Array)[MAGHRIB] as Double;
+        }
 
         // Also calculate tomorrow's Fajr
         var tomorrow = Time.now().add(new Time.Duration(86400));
@@ -303,6 +330,33 @@ class PrayerState {
             return "0" + n.toString();
         }
         return n.toString();
+    }
+
+    // Current position between sunrise and sunset, clamped 0.0-1.0.
+    static function computeDayFraction(hour as Double, sr as Double, ss as Double) as Float {
+        if (ss <= sr) { return 0.0f; }
+        var f = (hour - sr) / (ss - sr);
+        if (f < 0.0) { f = 0.0; }
+        if (f > 1.0) { f = 1.0; }
+        return f.toFloat();
+    }
+
+    // Per-prayer status array: 0 passed, 1 next, 2 upcoming.
+    static function computeStatus(times as Array, hour as Double,
+                                  nextIdx as Number, allPassed as Boolean) as Array {
+        var s = [0, 0, 0, 0, 0, 0];
+        for (var i = 0; i < PRAYER_COUNT; i++) {
+            if (allPassed) {
+                s[i] = STATUS_PASSED;
+            } else if (i == nextIdx) {
+                s[i] = STATUS_NEXT;
+            } else if (hour >= (times[i] as Double)) {
+                s[i] = STATUS_PASSED;
+            } else {
+                s[i] = STATUS_UPCOMING;
+            }
+        }
+        return s;
     }
 
     // Get prayer display name, handling Friday/Jumuah

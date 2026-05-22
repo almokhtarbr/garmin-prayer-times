@@ -75,3 +75,37 @@ function testMoonWaxingEarly(logger as Test.Logger) as Boolean {
 function testMoonWaningLate(logger as Test.Logger) as Boolean {
     return MoonPhase.isWaxing(22) == false;
 }
+
+// ---- PrayerState pure logic ----
+
+(:test)
+function testDayFractionMidday(logger as Test.Logger) as Boolean {
+    // sunrise 6, sunset 18, now 12 -> 0.5
+    return FaceKit.approxEqual(
+        PrayerState.computeDayFraction(12.0d, 6.0d, 18.0d), 0.5, 0.01);
+}
+
+(:test)
+function testDayFractionClampLow(logger as Test.Logger) as Boolean {
+    // before sunrise -> clamped to 0
+    return FaceKit.approxEqual(
+        PrayerState.computeDayFraction(3.0d, 6.0d, 18.0d), 0.0, 0.01);
+}
+
+(:test)
+function testStatusMarksNextAndPassed(logger as Test.Logger) as Boolean {
+    // times: Fajr 5, Sunrise 6, Dhuhr 12, Asr 16, Maghrib 20, Isha 22
+    // now 13.0, next index 3 (Asr)
+    var times = [5.0d, 6.0d, 12.0d, 16.0d, 20.0d, 22.0d];
+    var s = PrayerState.computeStatus(times, 13.0d, 3, false);
+    // Fajr/Sunrise/Dhuhr passed (0), Asr next (1), Maghrib/Isha upcoming (2)
+    return s[0] == 0 && s[1] == 0 && s[2] == 0
+        && s[3] == 1 && s[4] == 2 && s[5] == 2;
+}
+
+(:test)
+function testStatusAllPassedAfterIsha(logger as Test.Logger) as Boolean {
+    var times = [5.0d, 6.0d, 12.0d, 16.0d, 20.0d, 22.0d];
+    var s = PrayerState.computeStatus(times, 23.0d, -1, true);
+    return s[0] == 0 && s[3] == 0 && s[5] == 0;
+}
