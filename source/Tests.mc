@@ -51,3 +51,27 @@ function testNormalizeNegative(logger as Test.Logger) as Boolean {
 function testNormalizeOver(logger as Test.Logger) as Boolean {
     return FaceKit.approxEqual(FaceKit.normalizeAngle(450.0), 90.0, 0.01);
 }
+
+// ---- MoonPhase ----
+
+(:test)
+function testMoonNewMoon(logger as Test.Logger) as Boolean {
+    // Hijri day 1 -> illumination ~0 (new moon)
+    return FaceKit.approxEqual(MoonPhase.illumination(1), 0.0, 0.02);
+}
+
+(:test)
+function testMoonFull(logger as Test.Logger) as Boolean {
+    // Hijri day 15 -> illumination near full
+    return MoonPhase.illumination(15) > 0.95;
+}
+
+(:test)
+function testMoonWaxingEarly(logger as Test.Logger) as Boolean {
+    return MoonPhase.isWaxing(5) == true;
+}
+
+(:test)
+function testMoonWaningLate(logger as Test.Logger) as Boolean {
+    return MoonPhase.isWaxing(22) == false;
+}
