@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
-    <iq:application id="8bed2c80-2119-4aad-9e8b-be24a0b340c7"
+    <iq:application id="6d894134-f788-4e6f-9d1f-bfe3ec3f8245"
                     type="watchface"
                     name="@Strings.AppName"
                     entry="GarminPrayerTimesApp"
