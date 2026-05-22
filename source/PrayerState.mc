@@ -112,6 +112,8 @@ class PrayerState {
     }
 
     function updateLocation(lat as Double, lng as Double) {
+        // Ignore invalid coordinates (e.g. a no-GPS-fix sentinel).
+        if (!isValidLocation(lat, lng)) { return; }
         // Only recalculate if location changed significantly (>~100m)
         if (latitude != null && longitude != null) {
             var dlat = lat - (latitude as Double);
@@ -357,6 +359,15 @@ class PrayerState {
             }
         }
         return s;
+    }
+
+    // True if (lat, lng) is a usable geographic coordinate.
+    // Rejects out-of-range values and the (0,0) / no-fix sentinels.
+    static function isValidLocation(lat as Double, lng as Double) as Boolean {
+        if (lat < -90.0 || lat > 90.0)   { return false; }
+        if (lng < -180.0 || lng > 180.0) { return false; }
+        if (lat == 0.0 && lng == 0.0)    { return false; }
+        return true;
     }
 
     // Get prayer display name, handling Friday/Jumuah

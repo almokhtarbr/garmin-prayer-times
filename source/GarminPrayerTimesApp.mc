@@ -19,7 +19,7 @@ class GarminPrayerTimesApp extends Application.AppBase {
             var pos = posInfo.position.toDegrees();
             var lat = pos[0] as Double;
             var lng = pos[1] as Double;
-            if (lat != 0.0 || lng != 0.0) {
+            if (PrayerState.isValidLocation(lat, lng)) {
                 prayerState.updateLocation(lat, lng);
                 hasGps = true;
             }

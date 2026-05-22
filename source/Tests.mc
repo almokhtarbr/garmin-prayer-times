@@ -109,3 +109,26 @@ function testStatusAllPassedAfterIsha(logger as Test.Logger) as Boolean {
     var s = PrayerState.computeStatus(times, 23.0d, -1, true);
     return s[0] == 0 && s[3] == 0 && s[5] == 0;
 }
+
+// ---- location validation ----
+
+(:test)
+function testLocationValid(logger as Test.Logger) as Boolean {
+    return PrayerState.isValidLocation(46.8d, -71.2d) == true;
+}
+
+(:test)
+function testLocationRejectsSentinel(logger as Test.Logger) as Boolean {
+    // the (180,180) value the simulator returns when there is no GPS fix
+    return PrayerState.isValidLocation(180.0d, 180.0d) == false;
+}
+
+(:test)
+function testLocationRejectsNullIsland(logger as Test.Logger) as Boolean {
+    return PrayerState.isValidLocation(0.0d, 0.0d) == false;
+}
+
+(:test)
+function testLocationRejectsOutOfRange(logger as Test.Logger) as Boolean {
+    return PrayerState.isValidLocation(95.0d, 10.0d) == false;
+}
