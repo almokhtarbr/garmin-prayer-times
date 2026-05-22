@@ -17,6 +17,9 @@ class CrescentFace {
         var cx = w / 2.0;
         var cy = h / 2.0;
 
+        // living time-of-day background
+        FaceKit.drawSkyLayer(dc, state);
+
         // crescent hero
         FaceKit.drawCrescent(dc, cx.toNumber(), (h * 0.25).toNumber(),
             (w * 0.13).toNumber(), state.moonIllumination, state.moonWaxing);
@@ -31,6 +34,7 @@ class CrescentFace {
         FaceKit.drawClock(dc, cx, h * 0.57,
             Graphics.FONT_NUMBER_MEDIUM, Theme.TEXT_BRIGHT);
         FaceKit.drawNextLine(dc, cx, h * 0.70, state);
+        FaceKit.drawWeather(dc, cx.toNumber(), (h * 0.80).toNumber());
 
         // quiet six-prayer arc along the bottom bezel
         var r = w * ARC_R;
