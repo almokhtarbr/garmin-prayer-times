@@ -34,6 +34,10 @@ class GradientArcFace {
         var cx = w / 2.0;
         var cy = h / 2.0;
         var r = w * ARC_R;
+
+        // living time-of-day background
+        var ph = FaceKit.drawSkyLayer(dc, state);
+
         var fajr = times[PrayerState.FAJR] as Double;
         var isha = times[PrayerState.ISHA] as Double;
 
@@ -62,15 +66,16 @@ class GradientArcFace {
         var now = System.getClockTime();
         var nowHour = (now.hour + now.min / 60.0).toDouble();
         var nowAng = ARC_START + frac(nowHour, fajr, isha) * ARC_SWEEP;
-        FaceKit.drawGlowDot(dc,
+        FaceKit.drawSun(dc,
             FaceKit.polarX(cx, r, nowAng), FaceKit.polarY(cy, r, nowAng),
-            6, Theme.NOON);
+            Sky.glowColor(ph));
 
         // center stack
         FaceKit.drawHijri(dc, cx, cy - h * 0.135, state);
         FaceKit.drawClock(dc, cx, cy + h * 0.01,
             Graphics.FONT_NUMBER_MEDIUM, Theme.TEXT_BRIGHT);
         FaceKit.drawNextLine(dc, cx, cy + h * 0.15, state);
+        FaceKit.drawWeather(dc, cx.toNumber(), (cy + h * 0.26).toNumber());
     }
 
     function drawLowPower(dc as Graphics.Dc, state as PrayerState) as Void {

@@ -22,6 +22,9 @@ class SolarDialFace {
         var cy = h / 2.0;
         var r = w * RING_R;
 
+        // living time-of-day background
+        var ph = FaceKit.drawSkyLayer(dc, state);
+
         var sunriseAng = FaceKit.hourToDialAngle(state.sunrise.toFloat());
         var sunsetAng  = FaceKit.hourToDialAngle(state.sunset.toFloat());
 
@@ -44,15 +47,16 @@ class SolarDialFace {
         var now = System.getClockTime();
         var nowHour = now.hour + now.min / 60.0;
         var nowAng = FaceKit.hourToDialAngle(nowHour.toFloat());
-        FaceKit.drawGlowDot(dc,
+        FaceKit.drawSun(dc,
             FaceKit.polarX(cx, r, nowAng), FaceKit.polarY(cy, r, nowAng),
-            7, Theme.NOON);
+            Sky.glowColor(ph));
 
         // center stack
         FaceKit.drawHijri(dc, cx, cy - h * 0.135, state);
         FaceKit.drawClock(dc, cx, cy + h * 0.01,
             Graphics.FONT_NUMBER_MEDIUM, Theme.TEXT_BRIGHT);
         FaceKit.drawNextLine(dc, cx, cy + h * 0.15, state);
+        FaceKit.drawWeather(dc, cx.toNumber(), (cy + h * 0.26).toNumber());
     }
 
     function drawLowPower(dc as Graphics.Dc, state as PrayerState) as Void {
