@@ -44,6 +44,20 @@ module FaceKit {
         return (r << 16) | (g << 8) | b;
     }
 
+    // Linear-interpolate two RGB colours. t is clamped to 0.0-1.0.
+    function lerpColor(c1 as Number, c2 as Number, t as Float) as Number {
+        var tt = t;
+        if (tt < 0.0) { tt = 0.0; }
+        if (tt > 1.0) { tt = 1.0; }
+        var r1 = (c1 >> 16) & 0xFF;
+        var g1 = (c1 >> 8) & 0xFF;
+        var b1 = c1 & 0xFF;
+        var r = (r1 + (((c2 >> 16) & 0xFF) - r1) * tt).toNumber();
+        var g = (g1 + (((c2 >> 8) & 0xFF) - g1) * tt).toNumber();
+        var b = (b1 + ((c2 & 0xFF) - b1) * tt).toNumber();
+        return (r << 16) | (g << 8) | b;
+    }
+
     // Draw an arc in the FaceKit convention (0 deg = top, clockwise).
     // Converts to Garmin's native convention (0 = 3 o'clock, counter-clockwise).
     function drawArcSegment(dc as Graphics.Dc, cx as Float, cy as Float, r as Float,

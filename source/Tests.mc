@@ -132,3 +132,48 @@ function testLocationRejectsNullIsland(logger as Test.Logger) as Boolean {
 function testLocationRejectsOutOfRange(logger as Test.Logger) as Boolean {
     return PrayerState.isValidLocation(95.0d, 10.0d) == false;
 }
+
+// ---- color interpolation ----
+
+(:test)
+function testLerpStart(logger as Test.Logger) as Boolean {
+    return FaceKit.lerpColor(0x000000, 0xFFFFFF, 0.0) == 0x000000;
+}
+
+(:test)
+function testLerpEnd(logger as Test.Logger) as Boolean {
+    return FaceKit.lerpColor(0x000000, 0xFFFFFF, 1.0) == 0xFFFFFF;
+}
+
+(:test)
+function testLerpMid(logger as Test.Logger) as Boolean {
+    // 255 * 0.5 = 127.5 -> 127 per channel
+    return FaceKit.lerpColor(0x000000, 0xFFFFFF, 0.5) == 0x7F7F7F;
+}
+
+(:test)
+function testLerpClampsBelowZero(logger as Test.Logger) as Boolean {
+    return FaceKit.lerpColor(0x101010, 0xFFFFFF, -1.0) == 0x101010;
+}
+
+// ---- sky phase ----
+
+(:test)
+function testSkyPhaseDay(logger as Test.Logger) as Boolean {
+    return Sky.phase(12.0d, 6.0d, 19.0d) == Sky.DAY;
+}
+
+(:test)
+function testSkyPhaseNight(logger as Test.Logger) as Boolean {
+    return Sky.phase(2.0d, 6.0d, 19.0d) == Sky.NIGHT;
+}
+
+(:test)
+function testSkyPhaseDawn(logger as Test.Logger) as Boolean {
+    return Sky.phase(5.5d, 6.0d, 19.0d) == Sky.DAWN;
+}
+
+(:test)
+function testSkyPhaseDusk(logger as Test.Logger) as Boolean {
+    return Sky.phase(19.5d, 6.0d, 19.0d) == Sky.DUSK;
+}
