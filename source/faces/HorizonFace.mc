@@ -21,6 +21,9 @@ class HorizonFace {
         var hy = h * HORIZON_Y;
         var domeR = w * DOME_R;
 
+        // living time-of-day background
+        var ph = FaceKit.drawSkyLayer(dc, state);
+
         // crescent moon in the twilight sky
         FaceKit.drawCrescent(dc,
             (cx - w * 0.24).toNumber(), (h * 0.20).toNumber(),
@@ -52,11 +55,11 @@ class HorizonFace {
                 dayLabel[k], FaceKit.statusColor(state.prayerStatus[i]));
         }
 
-        // sun riding the dome
+        // sun riding the dome — colour shifts with the time of day
         var sunAng = 287.0 + state.dayFraction * 146.0;
-        FaceKit.drawGlowDot(dc,
+        FaceKit.drawSun(dc,
             FaceKit.polarX(cx, domeR, sunAng),
-            FaceKit.polarY(hy, domeR, sunAng), 7, Theme.NOON);
+            FaceKit.polarY(hy, domeR, sunAng), Sky.glowColor(ph));
 
         // horizon line
         dc.setColor(Theme.SKY, Graphics.COLOR_TRANSPARENT);
@@ -70,6 +73,9 @@ class HorizonFace {
             state.prayerStatus[PrayerState.FAJR]);
         drawEdge(dc, cx + domeR * 0.74, hy + h * 0.06, "Isha",
             state.prayerStatus[PrayerState.ISHA]);
+
+        // weather, just above the clock
+        FaceKit.drawWeather(dc, cx.toNumber(), (hy - h * 0.04).toNumber());
 
         // center stack below the horizon
         FaceKit.drawClock(dc, cx, hy + h * 0.165,
