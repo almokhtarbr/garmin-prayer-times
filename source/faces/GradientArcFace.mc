@@ -36,7 +36,8 @@ class GradientArcFace {
         var r = w * ARC_R;
 
         // living time-of-day background
-        var ph = FaceKit.drawSkyLayer(dc, state);
+        var sunColor = FaceKit.drawSkyLayer(dc, state);
+        FaceKit.drawApproachGlow(dc, state.minutesToNext);
 
         var fajr = times[PrayerState.FAJR] as Double;
         var isha = times[PrayerState.ISHA] as Double;
@@ -68,7 +69,7 @@ class GradientArcFace {
         var nowAng = ARC_START + frac(nowHour, fajr, isha) * ARC_SWEEP;
         FaceKit.drawSun(dc,
             FaceKit.polarX(cx, r, nowAng), FaceKit.polarY(cy, r, nowAng),
-            Sky.glowColor(ph));
+            sunColor);
 
         // center stack
         FaceKit.drawHijri(dc, cx, cy - h * 0.135, state);

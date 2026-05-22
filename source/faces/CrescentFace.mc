@@ -19,6 +19,7 @@ class CrescentFace {
 
         // living time-of-day background
         FaceKit.drawSkyLayer(dc, state);
+        FaceKit.drawApproachGlow(dc, state.minutesToNext);
 
         // crescent hero
         FaceKit.drawCrescent(dc, cx.toNumber(), (h * 0.25).toNumber(),

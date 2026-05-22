@@ -23,7 +23,8 @@ class SolarDialFace {
         var r = w * RING_R;
 
         // living time-of-day background
-        var ph = FaceKit.drawSkyLayer(dc, state);
+        var sunColor = FaceKit.drawSkyLayer(dc, state);
+        FaceKit.drawApproachGlow(dc, state.minutesToNext);
 
         var sunriseAng = FaceKit.hourToDialAngle(state.sunrise.toFloat());
         var sunsetAng  = FaceKit.hourToDialAngle(state.sunset.toFloat());
@@ -49,7 +50,7 @@ class SolarDialFace {
         var nowAng = FaceKit.hourToDialAngle(nowHour.toFloat());
         FaceKit.drawSun(dc,
             FaceKit.polarX(cx, r, nowAng), FaceKit.polarY(cy, r, nowAng),
-            Sky.glowColor(ph));
+            sunColor);
 
         // center stack
         FaceKit.drawHijri(dc, cx, cy - h * 0.135, state);

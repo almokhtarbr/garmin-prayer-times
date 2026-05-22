@@ -64,6 +64,9 @@ class PrayerState {
     var moonIllumination as Float = 0.0f;
     var moonWaxing as Boolean = true;
 
+    // Minutes until the next prayer (for the approach glow).
+    var minutesToNext as Number = 999;
+
     // Settings cache
     var calcMethod as Number = 0;
     var asrMethod as Number = 0;
@@ -221,6 +224,7 @@ class PrayerState {
                 // Remaining = (24 - now) + tomorrowFajr
                 var remaining = (24.0 - hour) + (tomorrowFajr as Double);
                 countdownString = formatCountdown(remaining);
+                minutesToNext = (remaining * 60.0).toNumber();
                 // Progress: from Isha to tomorrow's Fajr
                 var ishaTime = times[ISHA] as Double;
                 var totalSpan = (24.0 - ishaTime) + (tomorrowFajr as Double);
@@ -234,6 +238,7 @@ class PrayerState {
                 countdownString = "--";
                 progressFraction = 0.0f;
                 iqamaCountdownString = "";
+                minutesToNext = 999;
             }
             return;
         }
@@ -251,6 +256,7 @@ class PrayerState {
         var remaining = nextTime - hour;
         if (remaining < 0.0) { remaining = remaining + 24.0; }
         countdownString = formatCountdown(remaining);
+        minutesToNext = (remaining * 60.0).toNumber();
 
         // Iqama countdown
         updateIqamaCountdown(hour, nextTime, nextPrayerIndex, false);

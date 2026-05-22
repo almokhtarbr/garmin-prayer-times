@@ -72,37 +72,44 @@ module FaceKit {
         }
     }
 
-    // A glowing sun: a coloured disc, a lighter ring, a white core.
+    // A glowing sun: a soft corona, the disc, a lighter ring, a white core.
     function drawSun(dc as Graphics.Dc, x as Float, y as Float,
                      color as Number) as Void {
         var xi = x.toNumber();
         var yi = y.toNumber();
+        dc.setColor(lerpColor(0x000000, color, 0.30), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(xi, yi, 21);
+        dc.setColor(lerpColor(0x000000, color, 0.60), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(xi, yi, 14);
         dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(xi, yi, 13);
+        dc.fillCircle(xi, yi, 10);
         dc.setColor(lerpColor(color, 0xFFFFFF, 0.55), Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(xi, yi, 8);
+        dc.fillCircle(xi, yi, 6);
         dc.setColor(0xFFFFFF, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(xi, yi, 4);
+        dc.fillCircle(xi, yi, 3);
     }
 
-    // Scatter fixed stars across the screen (deterministic positions).
-    function drawStarfield(dc as Graphics.Dc) as Void {
+    // Scatter fixed stars; alpha 0.0 (invisible) .. 1.0 (full night).
+    // Each star entry is [xFrac, yFrac, brightness] with brightness 1..3.
+    function drawStarfield(dc as Graphics.Dc, alpha as Float) as Void {
         var w = dc.getWidth();
         var h = dc.getHeight();
         var stars = [
-            [0.16,0.12,1],[0.30,0.07,1],[0.44,0.13,2],[0.58,0.06,1],
+            [0.16,0.12,1],[0.30,0.07,2],[0.44,0.13,1],[0.58,0.06,3],
             [0.70,0.11,1],[0.84,0.18,2],[0.12,0.26,1],[0.90,0.30,1],
-            [0.22,0.40,1],[0.79,0.42,1],[0.07,0.48,1],[0.93,0.52,2],
-            [0.35,0.22,1],[0.64,0.24,1],[0.50,0.32,1],[0.27,0.52,1],
-            [0.73,0.56,1],[0.18,0.62,1],[0.86,0.64,1],[0.40,0.30,1],
-            [0.60,0.16,2],[0.52,0.46,1],[0.10,0.36,1],[0.88,0.44,1]
+            [0.22,0.40,2],[0.79,0.42,1],[0.07,0.48,1],[0.93,0.52,1],
+            [0.35,0.22,1],[0.64,0.24,3],[0.50,0.32,1],[0.27,0.52,2],
+            [0.73,0.56,1],[0.18,0.62,1],[0.86,0.64,2],[0.40,0.30,1],
+            [0.60,0.16,1],[0.52,0.46,3],[0.10,0.36,1],[0.88,0.44,1]
         ];
-        dc.setColor(0xCFD4FF, Graphics.COLOR_TRANSPARENT);
         for (var i = 0; i < stars.size(); i++) {
             var s = stars[i];
+            var b = s[2] as Number;
+            var c = lerpColor(0x0A0C18, 0xE0E6FF, alpha * (0.4 + 0.2 * b));
+            dc.setColor(c, Graphics.COLOR_TRANSPARENT);
             dc.fillCircle(((s[0] as Float) * w).toNumber(),
                           ((s[1] as Float) * h).toNumber(),
-                          s[2] as Number);
+                          (b >= 3) ? 2 : 1);
         }
     }
 
@@ -129,16 +136,19 @@ module FaceKit {
         }
     }
 
-    // Paint the living time-of-day background (+ stars at night).
-    // Call as the first line of a face's draw(). Returns the Sky phase.
+    // Paint the continuous time-of-day background (+ fading stars).
+    // Call as the first line of a face's draw(). Returns the sun-glow colour.
     function drawSkyLayer(dc as Graphics.Dc, state as PrayerState) as Number {
         var t = System.getClockTime();
         var nowHour = (t.hour + t.min / 60.0).toDouble();
-        var ph = Sky.phase(nowHour, state.sunrise, state.sunset);
+        var sr = state.sunrise;
+        var ss = state.sunset;
         var wx = WeatherData.condition();
-        drawSky(dc, Sky.topColor(ph, wx), Sky.horizonColor(ph, wx));
-        if (Sky.showStars(ph)) { drawStarfield(dc); }
-        return ph;
+        drawSky(dc, Sky.topColor(nowHour, sr, ss, wx),
+                    Sky.horizonColor(nowHour, sr, ss, wx));
+        var sa = Sky.starAlpha(nowHour, sr, ss);
+        if (sa > 0.0) { drawStarfield(dc, sa); }
+        return Sky.glowColor(nowHour, sr, ss);
     }
 
     // Weather readout: glyph + temperature near (cx, y). Silent when no data.
@@ -190,15 +200,48 @@ module FaceKit {
         dc.fillCircle(x.toNumber(), y.toNumber(), radius);
     }
 
-    // A crescent: a lit disc carved by an offset background disc.
-    function drawCrescent(dc as Graphics.Dc, cx as Number, cy as Number, r as Number,
-                          illum as Float, waxing as Boolean) as Void {
-        dc.setColor(Theme.MOON, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, r);
-        var d = (2.0 * r * illum).toNumber();
-        var sx = waxing ? cx - d : cx + d;
-        dc.setColor(Theme.BG, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(sx, cy, r);
+    // A crescent moon, scanline-filled so it is correct on any background.
+    // Faint earthshine fills the dark limb.
+    function drawCrescent(dc as Graphics.Dc, cx as Number, cy as Number,
+                          r as Number, illum as Float, waxing as Boolean) as Void {
+        var d = 2.0 * r * illum;
+        var earth = lerpColor(Theme.BG, Theme.MOON, 0.13);
+        for (var dy = -r; dy <= r; dy++) {
+            var ch2 = (r * r - dy * dy).toFloat();
+            if (ch2 < 0.0) { continue; }
+            var chord = Math.sqrt(ch2);
+            var yy = cy + dy;
+            var moonL = cx - chord;
+            var moonR = cx + chord;
+            dc.setColor(earth, Graphics.COLOR_TRANSPARENT);
+            dc.drawLine(moonL.toNumber(), yy, moonR.toNumber(), yy);
+            dc.setColor(Theme.MOON, Graphics.COLOR_TRANSPARENT);
+            if (waxing) {
+                var litL = (cx - d) + chord;
+                if (litL < moonR) {
+                    dc.drawLine(litL.toNumber(), yy, moonR.toNumber(), yy);
+                }
+            } else {
+                var litR = (cx + d) - chord;
+                if (litR > moonL) {
+                    dc.drawLine(moonL.toNumber(), yy, litR.toNumber(), yy);
+                }
+            }
+        }
+    }
+
+    // A halo ring at the bezel that builds as a prayer nears (last 15 min).
+    function drawApproachGlow(dc as Graphics.Dc, minutesToNext as Number) as Void {
+        if (minutesToNext < 0 || minutesToNext > 15) { return; }
+        var intensity = (15 - minutesToNext).toFloat() / 15.0;
+        var w = dc.getWidth();
+        var h = dc.getHeight();
+        var penW = (3 + intensity * 9).toNumber();
+        dc.setColor(lerpColor(0x000000, Theme.accent(), 0.25 + intensity * 0.55),
+                    Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(penW);
+        dc.drawCircle(w / 2, h / 2, w / 2 - penW / 2 - 1);
+        dc.setPenWidth(1);
     }
 
     // Current time as HH:MM, centered on (cx, y).
