@@ -21,6 +21,11 @@ class PrayerState {
     static const MAGHRIB = 4;
     static const ISHA = 5;
 
+    // Prayer status values
+    static const STATUS_PASSED   = 0;
+    static const STATUS_NEXT     = 1;
+    static const STATUS_UPCOMING = 2;
+
     // Cached prayer times as hours (fractional) for today
     var todayTimes as Array?;
     // Tomorrow's Fajr time (hours, fractional)
@@ -40,6 +45,8 @@ class PrayerState {
 
     // Countdown string (e.g. "1h 23m", "45m")
     var countdownString as String = "";
+    // Iqama countdown string (e.g. "iqama in 23m")
+    var iqamaCountdownString as String = "";
     // Next prayer name for display
     var nextPrayerName as String = "";
 
@@ -48,6 +55,14 @@ class PrayerState {
 
     // Progress fraction (0.0 - 1.0) between current and next prayer
     var progressFraction as Float = 0.0f;
+
+    // Derived data for the faces
+    var sunrise as Double = 0.0d;
+    var sunset as Double = 0.0d;
+    var dayFraction as Float = 0.0f;
+    var prayerStatus as Array = [0, 0, 0, 0, 0, 0];
+    var moonIllumination as Float = 0.0f;
+    var moonWaxing as Boolean = true;
 
     // Settings cache
     var calcMethod as Number = 0;
@@ -97,6 +112,8 @@ class PrayerState {
     }
 
     function updateLocation(lat as Double, lng as Double) {
+        // Ignore invalid coordinates (e.g. a no-GPS-fix sentinel).
+        if (!isValidLocation(lat, lng)) { return; }
         // Only recalculate if location changed significantly (>~100m)
         if (latitude != null && longitude != null) {
             var dlat = lat - (latitude as Double);
@@ -128,11 +145,20 @@ class PrayerState {
             currentDateKey = dateKey;
             // Update Hijri date only on date change
             hijriDate = HijriCalendar.format(year, month, day);
+            var hParts = HijriCalendar.toHijri(year, month, day);
+            var hDay = hParts[2] as Number;
+            moonIllumination = MoonPhase.illumination(hDay);
+            moonWaxing = MoonPhase.isWaxing(hDay);
         }
 
-        // Update next prayer and countdown
+        // Update next prayer, countdown, and derived face data
         if (todayTimes != null) {
             updateNextPrayer(now);
+            var hr = (now.hour as Number).toDouble()
+                   + (now.min as Number).toDouble() / 60.0;
+            dayFraction = computeDayFraction(hr, sunrise, sunset);
+            prayerStatus = computeStatus(todayTimes as Array, hr,
+                nextPrayerIndex, isNextTomorrowFajr);
         }
     }
 
@@ -147,6 +173,11 @@ class PrayerState {
             latitude as Double, longitude as Double,
             tz, calcMethod, asrFactor
         );
+
+        if (todayTimes != null) {
+            sunrise = (todayTimes as Array)[SUNRISE] as Double;
+            sunset  = (todayTimes as Array)[MAGHRIB] as Double;
+        }
 
         // Also calculate tomorrow's Fajr
         var tomorrow = Time.now().add(new Time.Duration(86400));
@@ -197,9 +228,12 @@ class PrayerState {
                 if (elapsed < 0.0) { elapsed = elapsed + 24.0; }
                 progressFraction = (totalSpan > 0.0) ? (elapsed / totalSpan).toFloat() : 0.0f;
                 if (progressFraction > 1.0f) { progressFraction = 1.0f; }
+                // Iqama countdown for tomorrow's Fajr
+                updateIqamaCountdown(hour, tomorrowFajr as Double, FAJR, true);
             } else {
                 countdownString = "--";
                 progressFraction = 0.0f;
+                iqamaCountdownString = "";
             }
             return;
         }
@@ -218,6 +252,9 @@ class PrayerState {
         if (remaining < 0.0) { remaining = remaining + 24.0; }
         countdownString = formatCountdown(remaining);
 
+        // Iqama countdown
+        updateIqamaCountdown(hour, nextTime, nextPrayerIndex, false);
+
         // Progress between previous and next prayer
         var prevIndex = findPreviousPrayer(nextPrayerIndex);
         var prevTime = 0.0;
@@ -233,6 +270,29 @@ class PrayerState {
         if (elapsed < 0.0) { elapsed = elapsed + 24.0; }
         progressFraction = (totalSpan > 0.0) ? (elapsed / totalSpan).toFloat() : 0.0f;
         if (progressFraction > 1.0f) { progressFraction = 1.0f; }
+    }
+
+    hidden function updateIqamaCountdown(
+        hour as Double, prayerTime as Double, prayerIdx as Number, isTomorrow as Boolean
+    ) {
+        if (!showIqama || prayerIdx == SUNRISE) {
+            iqamaCountdownString = "";
+            return;
+        }
+        var offset = iqamaOffsets[prayerIdx] as Number;
+        if (offset <= 0) {
+            iqamaCountdownString = "";
+            return;
+        }
+        var iqamaTime = prayerTime + offset.toDouble() / 60.0;
+        var remaining;
+        if (isTomorrow) {
+            remaining = (24.0 - hour) + iqamaTime;
+        } else {
+            remaining = iqamaTime - hour;
+        }
+        if (remaining < 0.0) { remaining = remaining + 24.0; }
+        iqamaCountdownString = "iqama " + formatCountdown(remaining);
     }
 
     hidden function findPreviousPrayer(nextIdx as Number) as Number {
@@ -272,6 +332,42 @@ class PrayerState {
             return "0" + n.toString();
         }
         return n.toString();
+    }
+
+    // Current position between sunrise and sunset, clamped 0.0-1.0.
+    static function computeDayFraction(hour as Double, sr as Double, ss as Double) as Float {
+        if (ss <= sr) { return 0.0f; }
+        var f = (hour - sr) / (ss - sr);
+        if (f < 0.0) { f = 0.0; }
+        if (f > 1.0) { f = 1.0; }
+        return f.toFloat();
+    }
+
+    // Per-prayer status array: 0 passed, 1 next, 2 upcoming.
+    static function computeStatus(times as Array, hour as Double,
+                                  nextIdx as Number, allPassed as Boolean) as Array {
+        var s = [0, 0, 0, 0, 0, 0];
+        for (var i = 0; i < PRAYER_COUNT; i++) {
+            if (allPassed) {
+                s[i] = STATUS_PASSED;
+            } else if (i == nextIdx) {
+                s[i] = STATUS_NEXT;
+            } else if (hour >= (times[i] as Double)) {
+                s[i] = STATUS_PASSED;
+            } else {
+                s[i] = STATUS_UPCOMING;
+            }
+        }
+        return s;
+    }
+
+    // True if (lat, lng) is a usable geographic coordinate.
+    // Rejects out-of-range values and the (0,0) / no-fix sentinels.
+    static function isValidLocation(lat as Double, lng as Double) as Boolean {
+        if (lat < -90.0 || lat > 90.0)   { return false; }
+        if (lng < -180.0 || lng > 180.0) { return false; }
+        if (lat == 0.0 && lng == 0.0)    { return false; }
+        return true;
     }
 
     // Get prayer display name, handling Friday/Jumuah
