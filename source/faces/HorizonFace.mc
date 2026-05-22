@@ -22,7 +22,7 @@ class HorizonFace {
         var domeR = w * DOME_R;
 
         // living time-of-day background
-        var ph = FaceKit.drawSkyLayer(dc, state);
+        var sunColor = FaceKit.drawSkyLayer(dc, state);
 
         // crescent moon in the twilight sky
         FaceKit.drawCrescent(dc,
@@ -59,7 +59,7 @@ class HorizonFace {
         var sunAng = 287.0 + state.dayFraction * 146.0;
         FaceKit.drawSun(dc,
             FaceKit.polarX(cx, domeR, sunAng),
-            FaceKit.polarY(hy, domeR, sunAng), Sky.glowColor(ph));
+            FaceKit.polarY(hy, domeR, sunAng), sunColor);
 
         // horizon line
         dc.setColor(Theme.SKY, Graphics.COLOR_TRANSPARENT);

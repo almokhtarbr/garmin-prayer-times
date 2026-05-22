@@ -156,24 +156,24 @@ function testLerpClampsBelowZero(logger as Test.Logger) as Boolean {
     return FaceKit.lerpColor(0x101010, 0xFFFFFF, -1.0) == 0x101010;
 }
 
-// ---- sky phase ----
+// ---- sky star alpha ----
 
 (:test)
-function testSkyPhaseDay(logger as Test.Logger) as Boolean {
-    return Sky.phase(12.0d, 6.0d, 19.0d) == Sky.DAY;
+function testStarAlphaNight(logger as Test.Logger) as Boolean {
+    return FaceKit.approxEqual(Sky.starAlpha(2.0d, 6.0d, 19.0d), 1.0, 0.01);
 }
 
 (:test)
-function testSkyPhaseNight(logger as Test.Logger) as Boolean {
-    return Sky.phase(2.0d, 6.0d, 19.0d) == Sky.NIGHT;
+function testStarAlphaDay(logger as Test.Logger) as Boolean {
+    return FaceKit.approxEqual(Sky.starAlpha(12.0d, 6.0d, 19.0d), 0.0, 0.01);
 }
 
 (:test)
-function testSkyPhaseDawn(logger as Test.Logger) as Boolean {
-    return Sky.phase(5.5d, 6.0d, 19.0d) == Sky.DAWN;
+function testStarAlphaDawnRamp(logger as Test.Logger) as Boolean {
+    return FaceKit.approxEqual(Sky.starAlpha(5.5d, 6.0d, 19.0d), 0.5, 0.01);
 }
 
 (:test)
-function testSkyPhaseDusk(logger as Test.Logger) as Boolean {
-    return Sky.phase(19.5d, 6.0d, 19.0d) == Sky.DUSK;
+function testStarAlphaDuskRamp(logger as Test.Logger) as Boolean {
+    return FaceKit.approxEqual(Sky.starAlpha(19.5d, 6.0d, 19.0d), 0.5, 0.01);
 }

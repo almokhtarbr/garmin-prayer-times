@@ -85,24 +85,27 @@ module FaceKit {
         dc.fillCircle(xi, yi, 4);
     }
 
-    // Scatter fixed stars across the screen (deterministic positions).
-    function drawStarfield(dc as Graphics.Dc) as Void {
+    // Scatter fixed stars; alpha 0.0 (invisible) .. 1.0 (full night).
+    // Each star entry is [xFrac, yFrac, brightness] with brightness 1..3.
+    function drawStarfield(dc as Graphics.Dc, alpha as Float) as Void {
         var w = dc.getWidth();
         var h = dc.getHeight();
         var stars = [
-            [0.16,0.12,1],[0.30,0.07,1],[0.44,0.13,2],[0.58,0.06,1],
+            [0.16,0.12,1],[0.30,0.07,2],[0.44,0.13,1],[0.58,0.06,3],
             [0.70,0.11,1],[0.84,0.18,2],[0.12,0.26,1],[0.90,0.30,1],
-            [0.22,0.40,1],[0.79,0.42,1],[0.07,0.48,1],[0.93,0.52,2],
-            [0.35,0.22,1],[0.64,0.24,1],[0.50,0.32,1],[0.27,0.52,1],
-            [0.73,0.56,1],[0.18,0.62,1],[0.86,0.64,1],[0.40,0.30,1],
-            [0.60,0.16,2],[0.52,0.46,1],[0.10,0.36,1],[0.88,0.44,1]
+            [0.22,0.40,2],[0.79,0.42,1],[0.07,0.48,1],[0.93,0.52,1],
+            [0.35,0.22,1],[0.64,0.24,3],[0.50,0.32,1],[0.27,0.52,2],
+            [0.73,0.56,1],[0.18,0.62,1],[0.86,0.64,2],[0.40,0.30,1],
+            [0.60,0.16,1],[0.52,0.46,3],[0.10,0.36,1],[0.88,0.44,1]
         ];
-        dc.setColor(0xCFD4FF, Graphics.COLOR_TRANSPARENT);
         for (var i = 0; i < stars.size(); i++) {
             var s = stars[i];
+            var b = s[2] as Number;
+            var c = lerpColor(0x0A0C18, 0xE0E6FF, alpha * (0.4 + 0.2 * b));
+            dc.setColor(c, Graphics.COLOR_TRANSPARENT);
             dc.fillCircle(((s[0] as Float) * w).toNumber(),
                           ((s[1] as Float) * h).toNumber(),
-                          s[2] as Number);
+                          (b >= 3) ? 2 : 1);
         }
     }
 
@@ -129,16 +132,19 @@ module FaceKit {
         }
     }
 
-    // Paint the living time-of-day background (+ stars at night).
-    // Call as the first line of a face's draw(). Returns the Sky phase.
+    // Paint the continuous time-of-day background (+ fading stars).
+    // Call as the first line of a face's draw(). Returns the sun-glow colour.
     function drawSkyLayer(dc as Graphics.Dc, state as PrayerState) as Number {
         var t = System.getClockTime();
         var nowHour = (t.hour + t.min / 60.0).toDouble();
-        var ph = Sky.phase(nowHour, state.sunrise, state.sunset);
+        var sr = state.sunrise;
+        var ss = state.sunset;
         var wx = WeatherData.condition();
-        drawSky(dc, Sky.topColor(ph, wx), Sky.horizonColor(ph, wx));
-        if (Sky.showStars(ph)) { drawStarfield(dc); }
-        return ph;
+        drawSky(dc, Sky.topColor(nowHour, sr, ss, wx),
+                    Sky.horizonColor(nowHour, sr, ss, wx));
+        var sa = Sky.starAlpha(nowHour, sr, ss);
+        if (sa > 0.0) { drawStarfield(dc, sa); }
+        return Sky.glowColor(nowHour, sr, ss);
     }
 
     // Weather readout: glyph + temperature near (cx, y). Silent when no data.
