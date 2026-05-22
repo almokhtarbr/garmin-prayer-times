@@ -24,6 +24,7 @@ class SolarDialFace {
 
         // living time-of-day background
         var sunColor = FaceKit.drawSkyLayer(dc, state);
+        FaceKit.drawApproachGlow(dc, state.minutesToNext);
 
         var sunriseAng = FaceKit.hourToDialAngle(state.sunrise.toFloat());
         var sunsetAng  = FaceKit.hourToDialAngle(state.sunset.toFloat());

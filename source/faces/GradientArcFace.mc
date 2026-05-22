@@ -37,6 +37,7 @@ class GradientArcFace {
 
         // living time-of-day background
         var sunColor = FaceKit.drawSkyLayer(dc, state);
+        FaceKit.drawApproachGlow(dc, state.minutesToNext);
 
         var fajr = times[PrayerState.FAJR] as Double;
         var isha = times[PrayerState.ISHA] as Double;

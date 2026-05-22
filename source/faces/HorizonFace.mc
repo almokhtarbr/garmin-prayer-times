@@ -23,6 +23,7 @@ class HorizonFace {
 
         // living time-of-day background
         var sunColor = FaceKit.drawSkyLayer(dc, state);
+        FaceKit.drawApproachGlow(dc, state.minutesToNext);
 
         // crescent moon in the twilight sky
         FaceKit.drawCrescent(dc,
