@@ -1,6 +1,7 @@
 import Toybox.WatchUi;
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.System;
 import Toybox.Application;
 import Toybox.Application.Properties;
 
@@ -54,6 +55,21 @@ class GarminPrayerTimesView extends WatchUi.WatchFace {
         } else {
             face.draw(dc, state);
         }
+    }
+
+    // Called about once per second — draws the live seconds indicator.
+    // Dots accumulate into a filling ring; the once-a-minute onUpdate clears them.
+    function onPartialUpdate(dc as Graphics.Dc) as Void {
+        if (isLowPower) { return; }
+        var sec = System.getClockTime().sec;
+        var w = dc.getWidth();
+        var cx = w / 2.0;
+        var cy = dc.getHeight() / 2.0;
+        var r = w / 2.0 - 6.0;
+        var ang = (sec / 60.0) * 360.0;
+        dc.setColor(Theme.accent(), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(FaceKit.polarX(cx, r, ang).toNumber(),
+                      FaceKit.polarY(cy, r, ang).toNumber(), 2);
     }
 
     function onEnterSleep() as Void {
