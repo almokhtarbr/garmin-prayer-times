@@ -11,15 +11,19 @@ module Theme {
     const TRACK       = 0x1C1C1C;
 
     // Prayer dot states
-    const DOT_PASSED   = 0x5A5A5A;
-    const DOT_UPCOMING = 0xD2D2D2;
+    const DOT_PASSED   = 0x808080;
+    const DOT_UPCOMING = 0xE6E6E6;
 
     // Twilight palette (shared by faces)
     const NIGHT = 0x2B2F4D;
     const DAWN  = 0xC97B8E;
-    const NOON  = 0xE8C87A;
+    const NOON  = 0xF2C75B;
     const DUSK  = 0xE09A4E;
     const MOON  = 0xCFD4FF;
+
+    // Sky (dome / arc structure)
+    const SKY     = 0x6E78AE;
+    const SKY_DIM = 0x2E3354;
 
     const ACCENT_DEFAULT = 0xFFC34A;
 

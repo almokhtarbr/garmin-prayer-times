@@ -86,35 +86,55 @@ module FaceKit {
                           illum as Float, waxing as Boolean) as Void {
         dc.setColor(Theme.MOON, Graphics.COLOR_TRANSPARENT);
         dc.fillCircle(cx, cy, r);
-        var d = (r * (1.55 - illum * 1.1)).toNumber();
+        var d = (2.0 * r * illum).toNumber();
         var sx = waxing ? cx - d : cx + d;
         dc.setColor(Theme.BG, Graphics.COLOR_TRANSPARENT);
         dc.fillCircle(sx, cy, r);
     }
 
-    // Current time as HH:MM, horizontally centered at (cx, y).
+    // Current time as HH:MM, centered on (cx, y).
     function drawClock(dc as Graphics.Dc, cx as Float, y as Float,
                        font as Graphics.FontDefinition, color as Number) as Void {
         var t = System.getClockTime();
         var s = PrayerState.pad2(t.hour) + ":" + PrayerState.pad2(t.min);
         dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx.toNumber(), y.toNumber(), font, s, Graphics.TEXT_JUSTIFY_CENTER);
+        var fh = dc.getFontHeight(font);
+        dc.drawText(cx.toNumber(), (y - fh / 2.0).toNumber(), font, s,
+            Graphics.TEXT_JUSTIFY_CENTER);
     }
 
-    // "Asr in 2h 23m" in the accent color, centered at (cx, y).
+    // "Asr in 2h 23m" in the accent color, centered on (cx, y).
     function drawNextLine(dc as Graphics.Dc, cx as Float, y as Float,
                           state as PrayerState) as Void {
         dc.setColor(Theme.accent(), Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx.toNumber(), y.toNumber(), Graphics.FONT_TINY,
+        var fh = dc.getFontHeight(Graphics.FONT_TINY);
+        dc.drawText(cx.toNumber(), (y - fh / 2.0).toNumber(), Graphics.FONT_TINY,
             state.nextPrayerName + " in " + state.countdownString,
             Graphics.TEXT_JUSTIFY_CENTER);
     }
 
-    // Hijri date, dim, centered at (cx, y).
+    // Hijri date, dim, centered on (cx, y).
     function drawHijri(dc as Graphics.Dc, cx as Float, y as Float,
                        state as PrayerState) as Void {
         dc.setColor(Theme.TEXT_DIM, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx.toNumber(), y.toNumber(), Graphics.FONT_XTINY,
+        var fh = dc.getFontHeight(Graphics.FONT_XTINY);
+        dc.drawText(cx.toNumber(), (y - fh / 2.0).toNumber(), Graphics.FONT_XTINY,
             state.hijriDate, Graphics.TEXT_JUSTIFY_CENTER);
+    }
+
+    // A small label, centered on (x, y).
+    function drawLabel(dc as Graphics.Dc, x as Float, y as Float,
+                       text as String, color as Number) as Void {
+        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+        var fh = dc.getFontHeight(Graphics.FONT_XTINY);
+        dc.drawText(x.toNumber(), (y - fh / 2.0).toNumber(), Graphics.FONT_XTINY,
+            text, Graphics.TEXT_JUSTIFY_CENTER);
+    }
+
+    // Color for a prayer status: 0 passed, 1 next, 2 upcoming.
+    function statusColor(status as Number) as Number {
+        if (status == 1) { return Theme.accent(); }
+        if (status == 0) { return Theme.DOT_PASSED; }
+        return Theme.DOT_UPCOMING;
     }
 }

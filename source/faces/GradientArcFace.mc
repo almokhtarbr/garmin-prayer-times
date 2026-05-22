@@ -26,7 +26,7 @@ class GradientArcFace {
         var times = state.todayTimes;
         if (times == null) { return; }
 
-        var segColors = [Theme.NIGHT, Theme.DAWN, Theme.NOON, Theme.DUSK, Theme.NIGHT];
+        var segColors = [Theme.SKY, Theme.DAWN, Theme.NOON, Theme.DUSK, Theme.SKY];
         var pairs = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]];
 
         var w = dc.getWidth();
@@ -55,7 +55,7 @@ class GradientArcFace {
             var ang = ARC_START + frac(times[i] as Double, fajr, isha) * ARC_SWEEP;
             FaceKit.drawPrayerDot(dc,
                 FaceKit.polarX(cx, r, ang), FaceKit.polarY(cy, r, ang),
-                state.prayerStatus[i], 4);
+                state.prayerStatus[i], 5);
         }
 
         // sun bead at the current time
@@ -67,10 +67,10 @@ class GradientArcFace {
             6, Theme.NOON);
 
         // center stack
-        FaceKit.drawHijri(dc, cx, cy - h * 0.16, state);
-        FaceKit.drawClock(dc, cx, cy - h * 0.11,
+        FaceKit.drawHijri(dc, cx, cy - h * 0.135, state);
+        FaceKit.drawClock(dc, cx, cy + h * 0.01,
             Graphics.FONT_NUMBER_MEDIUM, Theme.TEXT_BRIGHT);
-        FaceKit.drawNextLine(dc, cx, cy + h * 0.04, state);
+        FaceKit.drawNextLine(dc, cx, cy + h * 0.15, state);
     }
 
     function drawLowPower(dc as Graphics.Dc, state as PrayerState) as Void {
@@ -81,8 +81,8 @@ class GradientArcFace {
         var r = w * ARC_R;
         FaceKit.drawArcSegment(dc, cx, cy, r, ARC_START, ARC_START + ARC_SWEEP,
             3, FaceKit.dim(Theme.DUSK, 1, 2));
-        FaceKit.drawClock(dc, cx, cy - h * 0.11,
+        FaceKit.drawClock(dc, cx, cy + h * 0.01,
             Graphics.FONT_NUMBER_MEDIUM, Theme.TEXT_MID);
-        FaceKit.drawNextLine(dc, cx, cy + h * 0.04, state);
+        FaceKit.drawNextLine(dc, cx, cy + h * 0.15, state);
     }
 }

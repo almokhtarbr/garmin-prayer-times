@@ -1,16 +1,13 @@
 import Toybox.Graphics;
 import Toybox.Lang;
 
-// Default face. A horizon line: the sun rides a sky dome for the four daytime
-// prayers; Isha and Fajr sit below in the night with a crescent moon.
+// Default face — a twilight horizon. The sun rides a sky dome past the four
+// daytime prayers; Fajr and Isha sit at the horizon's edges; a crescent hangs
+// in the twilight sky. Clock and next prayer read clean below the line.
 class HorizonFace {
 
-    // Tunable layout fractions (of screen width/height)
-    const HORIZON_Y   = 0.56;
-    const DOME_R      = 0.40;
-    const NIGHT_R     = 0.36;
-    const ISHA_ANGLE  = 138.0;
-    const FAJR_ANGLE  = 222.0;
+    const HORIZON_Y = 0.53;
+    const DOME_R    = 0.42;
 
     function initialize() {}
 
@@ -21,87 +18,92 @@ class HorizonFace {
         var w = dc.getWidth();
         var h = dc.getHeight();
         var cx = w / 2.0;
-        var horizonY = h * HORIZON_Y;
+        var hy = h * HORIZON_Y;
         var domeR = w * DOME_R;
-        var nightR = w * NIGHT_R;
 
-        // sky dome (270 deg left -> 360 top -> 450/90 right)
-        FaceKit.drawArcSegment(dc, cx, horizonY, domeR, 270.0, 450.0, 3, Theme.NIGHT);
+        // crescent moon in the twilight sky
+        FaceKit.drawCrescent(dc,
+            (cx - w * 0.24).toNumber(), (h * 0.20).toNumber(),
+            (w * 0.05).toNumber(), state.moonIllumination, state.moonWaxing);
 
-        // horizon line
-        dc.setColor(Theme.TEXT_DIM, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(2);
-        dc.drawLine((cx - domeR).toNumber(), horizonY.toNumber(),
-                    (cx + domeR).toNumber(), horizonY.toNumber());
-        dc.setPenWidth(1);
+        // sky dome — a layered twilight band
+        FaceKit.drawArcSegment(dc, cx, hy, domeR + 4, 270.0, 450.0, 7, Theme.SKY_DIM);
+        FaceKit.drawArcSegment(dc, cx, hy, domeR, 270.0, 450.0, 2, Theme.SKY);
 
-        // daytime prayers on the dome
+        // daytime prayers on the dome, with labels
         var sr = state.sunrise;
         var span = state.sunset - sr;
         if (span <= 0.0) { span = 1.0d; }
-        var dayIdx = [PrayerState.SUNRISE, PrayerState.DHUHR,
-                      PrayerState.ASR, PrayerState.MAGHRIB];
+        var dayIdx   = [PrayerState.SUNRISE, PrayerState.DHUHR,
+                        PrayerState.ASR, PrayerState.MAGHRIB];
+        var dayLabel = ["Shuruq", "Dhuhr", "Asr", "Maghrib"];
         for (var k = 0; k < 4; k++) {
             var i = dayIdx[k];
             var f = (((times[i] as Double) - sr) / span).toFloat();
             if (f < 0.0) { f = 0.0; }
             if (f > 1.0) { f = 1.0; }
-            var ang = 270.0 + f * 180.0;
+            var ang = 287.0 + f * 146.0;
             FaceKit.drawPrayerDot(dc,
-                FaceKit.polarX(cx, domeR, ang),
-                FaceKit.polarY(horizonY, domeR, ang),
-                state.prayerStatus[i], 5);
+                FaceKit.polarX(cx, domeR, ang), FaceKit.polarY(hy, domeR, ang),
+                state.prayerStatus[i], 6);
+            FaceKit.drawLabel(dc,
+                FaceKit.polarX(cx, domeR - 25, ang),
+                FaceKit.polarY(hy, domeR - 25, ang),
+                dayLabel[k], FaceKit.statusColor(state.prayerStatus[i]));
         }
 
-        // sun on the dome at the current day fraction
-        var sunAng = 270.0 + state.dayFraction * 180.0;
+        // sun riding the dome
+        var sunAng = 287.0 + state.dayFraction * 146.0;
         FaceKit.drawGlowDot(dc,
             FaceKit.polarX(cx, domeR, sunAng),
-            FaceKit.polarY(horizonY, domeR, sunAng),
-            6, Theme.NOON);
+            FaceKit.polarY(hy, domeR, sunAng), 7, Theme.NOON);
 
-        // night prayers below the horizon
-        FaceKit.drawPrayerDot(dc,
-            FaceKit.polarX(cx, nightR, ISHA_ANGLE),
-            FaceKit.polarY(horizonY, nightR, ISHA_ANGLE),
-            state.prayerStatus[PrayerState.ISHA], 5);
-        FaceKit.drawPrayerDot(dc,
-            FaceKit.polarX(cx, nightR, FAJR_ANGLE),
-            FaceKit.polarY(horizonY, nightR, FAJR_ANGLE),
-            state.prayerStatus[PrayerState.FAJR], 5);
+        // horizon line
+        dc.setColor(Theme.SKY, Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(2);
+        dc.drawLine((cx - domeR).toNumber(), hy.toNumber(),
+                    (cx + domeR).toNumber(), hy.toNumber());
+        dc.setPenWidth(1);
 
-        // crescent moon in the night zone
-        FaceKit.drawCrescent(dc,
-            (cx - w * 0.20).toNumber(), (horizonY + h * 0.22).toNumber(),
-            (w * 0.05).toNumber(), state.moonIllumination, state.moonWaxing);
+        // Fajr and Isha at the horizon's edges
+        drawEdge(dc, cx - domeR * 0.74, hy + h * 0.06, "Fajr",
+            state.prayerStatus[PrayerState.FAJR]);
+        drawEdge(dc, cx + domeR * 0.74, hy + h * 0.06, "Isha",
+            state.prayerStatus[PrayerState.ISHA]);
 
-        // center stack: clock, next prayer, hijri
-        FaceKit.drawClock(dc, cx, horizonY + h * 0.04,
+        // center stack below the horizon
+        FaceKit.drawClock(dc, cx, hy + h * 0.165,
             Graphics.FONT_NUMBER_MEDIUM, Theme.TEXT_BRIGHT);
-        FaceKit.drawNextLine(dc, cx, horizonY + h * 0.21, state);
-        FaceKit.drawHijri(dc, cx, horizonY + h * 0.29, state);
+        FaceKit.drawNextLine(dc, cx, hy + h * 0.295, state);
+        FaceKit.drawHijri(dc, cx, hy + h * 0.385, state);
+    }
+
+    hidden function drawEdge(dc as Graphics.Dc, x as Float, y as Float,
+                             label as String, status as Number) as Void {
+        FaceKit.drawPrayerDot(dc, x, y, status, 5);
+        FaceKit.drawLabel(dc, x, y + 15, label, FaceKit.statusColor(status));
     }
 
     function drawLowPower(dc as Graphics.Dc, state as PrayerState) as Void {
         var w = dc.getWidth();
         var h = dc.getHeight();
         var cx = w / 2.0;
-        var horizonY = h * HORIZON_Y;
+        var hy = h * HORIZON_Y;
         var domeR = w * DOME_R;
 
-        // horizon line + dimmed sun only
-        dc.setColor(Theme.TEXT_DIM, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(Theme.SKY, Graphics.COLOR_TRANSPARENT);
         dc.setPenWidth(2);
-        dc.drawLine((cx - domeR).toNumber(), horizonY.toNumber(),
-                    (cx + domeR).toNumber(), horizonY.toNumber());
+        dc.drawLine((cx - domeR).toNumber(), hy.toNumber(),
+                    (cx + domeR).toNumber(), hy.toNumber());
         dc.setPenWidth(1);
-        var sunAng = 270.0 + state.dayFraction * 180.0;
+
+        var sunAng = 287.0 + state.dayFraction * 146.0;
         dc.setColor(FaceKit.dim(Theme.NOON, 1, 2), Graphics.COLOR_TRANSPARENT);
         dc.fillCircle(FaceKit.polarX(cx, domeR, sunAng).toNumber(),
-                      FaceKit.polarY(horizonY, domeR, sunAng).toNumber(), 5);
+                      FaceKit.polarY(hy, domeR, sunAng).toNumber(), 5);
 
-        FaceKit.drawClock(dc, cx, horizonY + h * 0.04,
+        FaceKit.drawClock(dc, cx, hy + h * 0.165,
             Graphics.FONT_NUMBER_MEDIUM, Theme.TEXT_MID);
-        FaceKit.drawNextLine(dc, cx, horizonY + h * 0.21, state);
+        FaceKit.drawNextLine(dc, cx, hy + h * 0.295, state);
     }
 }
